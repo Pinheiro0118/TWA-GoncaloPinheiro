@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="pt">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Catálogo de Jogos - Ficha 03</title>
+  </head>
+  <body>
+    <!-- Controlos de filtragem e ordenação -->
+    <input type="text" id="searchInput" placeholder="Pesquisar jogos...">
+    
+    <select id="categorySelect">
+      <option value="">Todas as categorias</option>
+    </select>
+    
+    <button id="sortButton">Ordenar por Preço</button>
+
+    <!-- Contentores para os dados (têm de estar vazios no HTML) -->
+    <ul id="list"></ul>
+    <section id="detail"></section>
+
+    <!-- Ligação ao ficheiro JavaScript principal -->
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
