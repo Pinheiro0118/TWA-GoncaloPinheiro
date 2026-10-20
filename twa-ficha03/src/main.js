@@ -1,4 +1,3 @@
-// Importar as funções puras do teu ficheiro catalog.js
 import { search, byCategory, categories, sortByPrice } from './catalog.js';
 
 // 1. O Estado da Aplicação (State)
@@ -12,10 +11,11 @@ const state = {
   selectedId: null,
 };
 
-// Referências aos elementos do HTML criados no passo anterior
+// Referências aos elementos do HTML (incluindo o statusEl)
 const searchInput = document.getElementById('searchInput');
 const categorySelect = document.getElementById('categorySelect');
 const sortButton = document.getElementById('sortButton');
+const statusEl = document.getElementById('status');
 const listEl = document.getElementById('list');
 const detailEl = document.getElementById('detail');
 
@@ -23,7 +23,7 @@ const detailEl = document.getElementById('detail');
 async function load() {
   try {
     state.status = 'loading';
-    render(); // Mostra mensagem de carregamento
+    render();
 
     const res = await fetch('/items.json');
     if (!res.ok) throw new Error(`Erro de rede: ${res.status}`);
@@ -32,7 +32,6 @@ async function load() {
     state.items = data;
     state.status = 'ready';
 
-    // Preencher as opções do <select> dinamicamente com base nos dados
     const cats = categories(state.items);
     cats.forEach(cat => {
       const option = document.createElement('option');
@@ -45,27 +44,29 @@ async function load() {
     state.status = 'error';
     state.error = err.message;
   } finally {
-    render(); // Atualiza a interface no fim do processo
+    render();
   }
 }
 
 // 3. Renderizar a Interface (Sem innerHTML, apenas createElement e textContent)
 function render() {
-  // Limpar as listas antes de as reconstruir
+  // Limpar os elementos antes de os reconstruir
+  statusEl.textContent = '';
   listEl.textContent = '';
   detailEl.textContent = '';
 
+  // As mensagens de estado vão para o #status e não para o #list
   if (state.status === 'loading') {
-    listEl.textContent = 'A carregar os jogos...';
+    statusEl.textContent = 'A carregar os jogos...';
     return;
   }
 
   if (state.status === 'error') {
-    listEl.textContent = `Ocorreu um erro: ${state.error}`;
+    statusEl.textContent = `Ocorreu um erro: ${state.error}`;
     return;
   }
 
-  // A. Processar a lista com base no estado atual (Filtros e Ordenação)
+  // A. Processar a lista com base no estado atual
   let processedList = state.items;
   
   if (state.category) {
@@ -75,22 +76,14 @@ function render() {
   if (state.query) {
     processedList = search(processedList, state.query);
   }
-  
-  // A função sortByPrice tem de ser criada por ti no catalog.js
-  if (typeof sortByPrice === 'function') {
-    processedList = sortByPrice(processedList, state.sortDir);
-  }
 
-  // B. Construir a lista visual no DOM
+  processedList = sortByPrice(processedList, state.sortDir);
+
+  // B. Construir a lista visual no DOM com data-id (sem event listener individual)
   processedList.forEach(item => {
     const li = document.createElement('li');
     li.textContent = `${item.name} — ${item.price}€`;
-    
-    // Evento de clique no item para ver detalhes
-    li.addEventListener('click', () => {
-      state.selectedId = item.id;
-      render(); // O evento só muda o estado e chama o render()
-    });
+    li.dataset.id = item.id; // Guarda o ID no elemento HTML
     
     listEl.appendChild(li);
   });
@@ -112,7 +105,6 @@ function render() {
       const author = document.createElement('p');
       author.textContent = `Autor: ${selectedItem.author.name} (${selectedItem.author.country})`;
 
-      // Anexar tudo à secção de detalhe
       detailEl.appendChild(title);
       detailEl.appendChild(info);
       detailEl.appendChild(tags);
@@ -121,7 +113,16 @@ function render() {
   }
 }
 
-// 4. Configurar os Eventos da Interface (Inputs e Botões)
+// 4. Delegação de Eventos (Um único listener no #list)
+listEl.addEventListener('click', (e) => {
+  const li = e.target.closest('li');
+  if (li && li.dataset.id) {
+    state.selectedId = Number(li.dataset.id);
+    render();
+  }
+});
+
+// 5. Eventos dos Controlos da Interface
 searchInput.addEventListener('input', (e) => {
   state.query = e.target.value;
   render();
@@ -133,7 +134,6 @@ categorySelect.addEventListener('change', (e) => {
 });
 
 sortButton.addEventListener('click', () => {
-  // Alternar a direção entre 'asc' e 'desc'
   state.sortDir = state.sortDir === 'desc' ? 'asc' : 'desc';
   render();
 });
